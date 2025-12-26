@@ -55,6 +55,8 @@ services:
     depends_on:
       backend:
         condition: service_started
+    networks:
+      - sentiment_net
 
   ingester:
     build: ./ingester

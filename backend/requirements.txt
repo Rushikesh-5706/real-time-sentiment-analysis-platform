@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+sqlalchemy[asyncio]
+aiopg
+redis>=4.2.0
+websockets
+python-multipart
+asyncpg

@@ -104,8 +104,6 @@ sentiment-platform/
 ---
 
 
----
-
 ## 📸 Execution Proof & Screenshots
 
 ### Docker Services Running
@@ -128,6 +126,8 @@ sentiment-platform/
 
 ### WebSocket Connection
 ![WebSocket](screenshots/07-websocket-connected.png)
+
+---
 
 
 ## Testing

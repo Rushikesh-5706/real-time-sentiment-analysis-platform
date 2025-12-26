@@ -103,6 +103,33 @@ sentiment-platform/
 
 ---
 
+
+---
+
+## 📸 Execution Proof & Screenshots
+
+### Docker Services Running
+![Docker](screenshots/01-docker-compose-ps.png)
+
+### Backend Health Check
+![Health](screenshots/02-api-health.png)
+
+### Posts API
+![Posts](screenshots/03-api-posts.png)
+
+### Sentiment Aggregation API
+![Aggregate](screenshots/04-sentiment-aggregate.png)
+
+### Sentiment Distribution API
+![Distribution](screenshots/05-sentiment-distribution.png)
+
+### Frontend Dashboard
+![Dashboard](screenshots/06-dashboard.png)
+
+### WebSocket Connection
+![WebSocket](screenshots/07-websocket-connected.png)
+
+
 ## Testing
 Backend tests are written using `pytest`.
 

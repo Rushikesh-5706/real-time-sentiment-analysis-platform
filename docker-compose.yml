@@ -37,6 +37,8 @@ services:
     container_name: sentiment_backend
     env_file:
       - .env
+    environment:
+    - PYTHONPATH=/app
     depends_on:
       postgres:
         condition: service_healthy
@@ -46,7 +48,7 @@ services:
       - "8000:8000"
     networks:
       - sentiment_net
-
+    
   frontend:
     build: ./frontend
     container_name: sentiment_frontend

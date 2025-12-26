@@ -141,7 +141,7 @@ async def sentiment_distribution(hours: int = Query(24, ge=1, le=168)):
 
 @router.get("/sentiment/aggregate")
 async def sentiment_aggregate(
-    period: str = Query("hour", regex="^(minute|hour|day)$")
+        period: str = Query("hour", pattern="^(minute|hour|day)$")
 ):
     """
     Evaluator-safe aggregate endpoint.

@@ -6,7 +6,7 @@ router = APIRouter(prefix="/api/sentiment")
 
 @router.get("/aggregate")
 async def sentiment_aggregate(
-    period: str = Query(..., regex="^(minute|hour|day)$")
+         period: str = Query(..., pattern="^(minute|hour|day)$")
 ):
     async with AsyncSessionLocal() as session:
         result = await session.execute(

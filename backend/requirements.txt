@@ -6,3 +6,10 @@ redis>=4.2.0
 websockets
 python-multipart
 asyncpg
+pytest
+pytest-asyncio
+pytest-cov
+httpx
+pytest
+pytest-asyncio
+pytest-cov

@@ -1,89 +1,77 @@
+import os
 import time
 import json
 import random
-import uuid
-import os
 from datetime import datetime, timezone
-
 import redis
-
 
 REDIS_HOST = os.getenv("REDIS_HOST", "redis")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 STREAM_NAME = os.getenv("REDIS_STREAM_NAME", "social_posts_stream")
+RATE = int(os.getenv("INGESTER_RATE_SECONDS", 5))
 
-POSTS_PER_MINUTE = int(os.getenv("POSTS_PER_MINUTE", 60))
-SLEEP_TIME = 60 / POSTS_PER_MINUTE
+redis_client = redis.Redis(
+    host=REDIS_HOST,
+    port=REDIS_PORT,
+    decode_responses=True
+)
 
-
-POSITIVE_TEMPLATES = [
-    "I absolutely love {}!",
+positive = [
+    "I absolutely love {}.",
     "{} exceeded my expectations!",
-    "Amazing experience with {}.",
+    "Amazing experience with {}."
 ]
-
-NEGATIVE_TEMPLATES = [
+negative = [
     "Very disappointed with {}.",
     "Terrible experience using {}.",
-    "I hate {}. Waste of money.",
+    "I hate {}."
 ]
-
-NEUTRAL_TEMPLATES = [
-    "Just tried {} today.",
+neutral = [
+    "Just tried {}.",
     "Using {} for the first time.",
-    "Received {} today.",
+    "Received {} today."
 ]
 
-PRODUCTS = [
-    "iPhone 16",
-    "Tesla Model 3",
-    "ChatGPT",
+products = [
     "Netflix",
     "Amazon Prime",
+    "Tesla Model 3",
+    "ChatGPT",
+    "iPhone 16"
 ]
-
 
 def generate_post():
     sentiment_type = random.choices(
-        ["positive", "neutral", "negative"],
-        weights=[40, 30, 30],
-        k=1,
+        ["positive", "negative", "neutral"],
+        weights=[40, 30, 30]
     )[0]
 
-    if sentiment_type == "positive":
-        template = random.choice(POSITIVE_TEMPLATES)
-    elif sentiment_type == "negative":
-        template = random.choice(NEGATIVE_TEMPLATES)
-    else:
-        template = random.choice(NEUTRAL_TEMPLATES)
+    product = random.choice(products)
 
-    product = random.choice(PRODUCTS)
+    if sentiment_type == "positive":
+        content = random.choice(positive).format(product)
+    elif sentiment_type == "negative":
+        content = random.choice(negative).format(product)
+    else:
+        content = random.choice(neutral).format(product)
 
     return {
-        "post_id": f"post_{uuid.uuid4().hex}",
+        "post_id": f"live_{int(time.time() * 1000)}",
         "source": random.choice(["twitter", "reddit"]),
-        "content": template.format(product),
-        "author": f"user_{random.randint(1000, 9999)}",
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "content": content,
+        "author": f"user{random.randint(1,100)}",
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
 
+print("🚀 Ingester started")
 
-def main():
-    r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
-
-    print("🚀 Ingester started, publishing to Redis Stream")
-
-    while True:
+while True:
+    try:
         post = generate_post()
-        try:
-            r.xadd(STREAM_NAME, post)
-            print(f"Published: {post['post_id']}")
-        except redis.exceptions.RedisError as e:
-            print(f"Redis error: {e}")
-
-        time.sleep(SLEEP_TIME)
-
-
-if __name__ == "__main__":
-    main()
+        redis_client.xadd(STREAM_NAME, post_data)
+        print("📤 Published:", post["post_id"], flush=True)
+        time.sleep(RATE)
+    except Exception as e:
+        print("❌ Ingester error:", e, flush=True)
+        time.sleep(5)
 

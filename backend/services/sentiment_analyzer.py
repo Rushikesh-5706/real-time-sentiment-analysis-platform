@@ -5,6 +5,7 @@ from transformers import pipeline
 import httpx
 import logging
 import json
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -117,24 +118,53 @@ class SentimentAnalyzer:
             return []
         
         if self.model_type == 'local':
-            results = []
-            for text in texts:
-                try:
-                    result = await self.analyze_sentiment(text)
-                    results.append(result)
-                except Exception as e:
-                    logger.error(f"Error analyzing text: {e}")
+            try:
+                # Use pipeline batching for efficiency
+                # Truncate texts to 512 chars to avoid token limit issues in batch
+                safe_texts = [t[:512] for t in texts]
+                
+                # Batch processing for sentiment
+                sentiment_results = self.sentiment_pipeline(safe_texts, batch_size=len(texts))
+                
+                results = []
+                for i, res in enumerate(sentiment_results):
+                    label = res['label'].lower()
+                    if 'pos' in label or label == 'positive':
+                        sentiment_label = 'positive'
+                    elif 'neg' in label or label == 'negative':
+                        sentiment_label = 'negative'
+                    else:
+                        sentiment_label = 'neutral'
+                        
                     results.append({
-                        'sentiment_label': 'neutral',
-                        'confidence_score': 0.0,
-                        'model_name': self.model_name,
-                        'error': str(e)
+                        'sentiment_label': sentiment_label,
+                        'confidence_score': float(res['score']),
+                        'model_name': self.model_name
                     })
-            return results
+                return results
+            except Exception as e:
+                logger.error(f"Batch analysis failed: {e}")
+                # Fallback to individual processing if batch fails
+                results = []
+                for text in texts:
+                    try:
+                        results.append(await self.analyze_sentiment(text))
+                    except:
+                        results.append({
+                            'sentiment_label': 'neutral',
+                            'confidence_score': 0.0,
+                            'model_name': self.model_name
+                        })
+                return results
         else:
             tasks = [self.analyze_sentiment(text) for text in texts]
             return await asyncio.gather(*tasks, return_exceptions=True)
     
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type((httpx.RequestError, httpx.HTTPStatusError))
+    )
     async def _external_sentiment(self, text: str) -> Dict:
         prompt = f"""Analyze the sentiment of this text and respond ONLY with a JSON object (no markdown, no explanation):
 {{"sentiment_label": "positive" or "negative" or "neutral", "confidence_score": 0.0 to 1.0}}
@@ -190,12 +220,20 @@ Text: {text}"""
             
         except Exception as e:
             logger.error(f"External API error: {e}")
+            # Re-raise for retry logic to catch it
+            if isinstance(e, (httpx.RequestError, httpx.HTTPStatusError)):
+                raise
             return {
                 'sentiment_label': 'neutral',
                 'confidence_score': 0.5,
                 'model_name': self.model_name
             }
     
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type((httpx.RequestError, httpx.HTTPStatusError))
+    )
     async def _external_emotion(self, text: str) -> Dict:
         prompt = f"""Detect the primary emotion in this text. Respond ONLY with JSON:
 {{"emotion": "joy" or "sadness" or "anger" or "fear" or "surprise" or "neutral", "confidence_score": 0.0 to 1.0}}
@@ -233,6 +271,9 @@ Text: {text}"""
             result['model_name'] = self.model_name
             return result
         except Exception as e:
+            # Re-raise for retry logic to catch it
+            if isinstance(e, (httpx.RequestError, httpx.HTTPStatusError)):
+                raise
             return {
                 'emotion': 'neutral',
                 'confidence_score': 0.5,

@@ -21,7 +21,7 @@ class SocialMediaPost(Base):
     source = Column(String(50), index=True, nullable=False)
     content = Column(Text, nullable=False)
     author = Column(String(255))
-    created_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, nullable=False, index=True)
     ingested_at = Column(DateTime, server_default=func.now())
 
 

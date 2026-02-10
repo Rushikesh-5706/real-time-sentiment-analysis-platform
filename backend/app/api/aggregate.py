@@ -94,6 +94,28 @@ async def get_sentiment_aggregate(
         total_neutral += d['neutral_count']
         
         final_data.append(d)
+        
+    # CRITICAL: Ensure at least one time period is returned even if no data
+    if not final_data:
+        # Generate a single time period with zero counts
+        if period == 'minute':
+            base_time = end_date.replace(second=0, microsecond=0)
+        elif period == 'hour':
+            base_time = end_date.replace(minute=0, second=0, microsecond=0)
+        else:  # day
+            base_time = end_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        final_data = [{
+            'timestamp': base_time.isoformat(),
+            'positive_count': 0,
+            'negative_count': 0,
+            'neutral_count': 0,
+            'total_count': 0,
+            'positive_percentage': 0.0,
+            'negative_percentage': 0.0,
+            'neutral_percentage': 0.0,
+            'average_confidence': 0.0
+        }]
     
     return {
         "period": period,

@@ -114,7 +114,7 @@ async def test_distribution_validation(client: AsyncClient):
 
 # --- Websocket ---
 from fastapi.testclient import TestClient
-from app.api.main import app
+from app.main import app
 
 def test_websocket_connect():
     client = TestClient(app)
@@ -123,3 +123,11 @@ def test_websocket_connect():
         assert data["type"] == "connected"
         # Since logic loops, we might receive metrics immediately or after delay
         # Just creating connection is enough for this test
+
+@pytest.mark.asyncio
+async def test_get_alerts_structure(client: AsyncClient):
+    response = await client.get("/api/alerts")
+    data = response.json()
+    assert "alerts" in data
+    assert "total" in data
+    assert "limit" in data

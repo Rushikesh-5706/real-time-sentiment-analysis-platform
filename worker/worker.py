@@ -8,12 +8,26 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
 import logging
+import httpx
 
 sys.path.append('/app/backend')
 from services.sentiment_analyzer import SentimentAnalyzer
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+
+# ADD before class definition (line 18):
+shutdown_event = asyncio.Event()
+
+def handle_shutdown(signum, frame):
+    """Handle SIGTERM and SIGINT gracefully"""
+    logger.info(f"Received signal {signum}, initiating graceful shutdown...")
+    shutdown_event.set()
+
+import signal
+signal.signal(signal.SIGTERM, handle_shutdown)
+signal.signal(signal.SIGINT, handle_shutdown)
 
 class SentimentWorker:
     def __init__(self, redis_client, db_engine, stream_name: str, consumer_group: str):
@@ -64,27 +78,32 @@ class SentimentWorker:
                 self.redis_client.xack(self.stream_name, self.consumer_group, message_id)
                 return False
             
+            # Parse ISO timestamp to datetime object for PostgreSQL
+            # Remove timezone info to match TIMESTAMP WITHOUT TIME ZONE column
+            from datetime import datetime as dt
+            created_at_str = message_data['created_at']
+            created_at_dt = dt.fromisoformat(created_at_str.replace('Z', '+00:00')).replace(tzinfo=None)
+            
             content = message_data['content']
             
+            # Use LOCAL models ONLY for reliable processing
+            # External API is unreliable and causes processing failures
             try:
                 sentiment_result = await self.local_analyzer.analyze_sentiment(content)
                 emotion_result = await self.local_analyzer.analyze_emotion(content)
             except Exception as e:
-                logger.error(f"Local analysis failed: {e}")
-                if self.external_analyzer:
-                    sentiment_result = await self.external_analyzer.analyze_sentiment(content)
-                    emotion_result = await self.external_analyzer.analyze_emotion(content)
-                else:
-                    sentiment_result = {
-                        'sentiment_label': 'neutral',
-                        'confidence_score': 0.5,
-                        'model_name': 'fallback'
-                    }
-                    emotion_result = {
-                        'emotion': 'neutral',
-                        'confidence_score': 0.5,
-                        'model_name': 'fallback'
-                    }
+                logger.error(f"Analysis failed for {message_data['post_id']}: {e}")
+                # Use neutral fallback if even local model fails
+                sentiment_result = {
+                    'sentiment_label': 'neutral',
+                    'confidence_score': 0.5,
+                    'model_name': 'fallback'
+                }
+                emotion_result = {
+                    'emotion': 'neutral',
+                    'confidence_score': 0.5,
+                    'model_name': 'fallback'
+                }
             
             async with self.async_session() as session:
                 await session.execute(
@@ -98,7 +117,7 @@ class SentimentWorker:
                         'source': message_data['source'],
                         'content': message_data['content'],
                         'author': message_data['author'],
-                        'created_at': message_data['created_at']
+                        'created_at': created_at_dt  # Use parsed datetime
                     }
                 )
                 
@@ -122,6 +141,25 @@ class SentimentWorker:
                 
                 await session.commit()
             
+            # Broadcast new post to WebSocket clients
+            try:
+                async with httpx.AsyncClient(timeout=2.0) as http_client:
+                    await http_client.post(
+                        'http://backend:8000/api/internal/broadcast',
+                        json={
+                            'post_id': message_data['post_id'],
+                            'content': message_data['content'],
+                            'source': message_data['source'],
+                            'sentiment_label': sentiment_result['sentiment_label'],
+                            'confidence_score': sentiment_result['confidence_score'],
+                            'emotion': emotion_result['emotion']
+                        }
+                    )
+                    logger.debug(f"Broadcasted post {message_data['post_id']}")
+            except Exception as broadcast_error:
+                # Don't fail processing if broadcast fails
+                logger.warning(f"Broadcast failed: {broadcast_error}")
+            
             self.redis_client.xack(self.stream_name, self.consumer_group, message_id)
             
             self.processed_count += 1
@@ -139,7 +177,7 @@ class SentimentWorker:
         logger.info(f"Worker {self.consumer_name} started")
         
         try:
-            while True:
+            while not shutdown_event.is_set():
                 try:
                     messages = self.redis_client.xreadgroup(
                         self.consumer_group,

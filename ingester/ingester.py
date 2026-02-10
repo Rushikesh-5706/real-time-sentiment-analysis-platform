@@ -2,8 +2,9 @@ import os
 import time
 import json
 import random
+import asyncio
 from datetime import datetime, timezone
-import redis
+import redis.asyncio as redis
 import logging
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -73,7 +74,7 @@ class DataIngester:
     
     async def publish_post(self, post: dict) -> bool:
         try:
-            message_id = self.redis_client.xadd(self.stream_name, post)
+            message_id = await self.redis_client.xadd(self.stream_name, post)
             logger.info(f"Published post {post['post_id']} with message_id {message_id}")
             return True
         except redis.exceptions.ConnectionError as e:
@@ -102,7 +103,7 @@ class DataIngester:
                     if post_count % 10 == 0:
                         logger.info(f"Published {post_count} posts")
                 
-                time.sleep(self.sleep_interval)
+                await asyncio.sleep(self.sleep_interval)
                 
         except KeyboardInterrupt:
             logger.info(f"Ingester stopped. Total posts published: {post_count}")
@@ -110,32 +111,34 @@ class DataIngester:
             logger.error(f"Fatal error in ingester: {e}")
 
 if __name__ == "__main__":
-    import asyncio
     
     REDIS_HOST = os.getenv("REDIS_HOST", "redis")
     REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
     STREAM_NAME = os.getenv("REDIS_STREAM_NAME", "social_posts_stream")
     POSTS_PER_MINUTE = int(os.getenv("POSTS_PER_MINUTE", 60))
     
-    redis_client = redis.Redis(
-        host=REDIS_HOST,
-        port=REDIS_PORT,
-        decode_responses=True,
-        socket_connect_timeout=5,
-        socket_timeout=5
-    )
-    
-    for attempt in range(30):
-        try:
-            redis_client.ping()
-            logger.info("Connected to Redis")
-            break
-        except:
-            logger.info(f"Waiting for Redis... (attempt {attempt + 1}/30)")
-            time.sleep(2)
-    else:
-        logger.error("Could not connect to Redis after 30 attempts")
-        exit(1)
-    
-    ingester = DataIngester(redis_client, STREAM_NAME, POSTS_PER_MINUTE)
-    asyncio.run(ingester.start())
+    async def main():
+        redis_client = redis.Redis(
+            host=REDIS_HOST,
+            port=REDIS_PORT,
+            decode_responses=True,
+            socket_connect_timeout=5,
+            socket_timeout=5
+        )
+        
+        for attempt in range(30):
+            try:
+                await redis_client.ping()
+                logger.info("Connected to Redis")
+                break
+            except:
+                logger.info(f"Waiting for Redis... (attempt {attempt + 1}/30)")
+                await asyncio.sleep(2)
+        else:
+            logger.error("Could not connect to Redis after 30 attempts")
+            exit(1)
+        
+        ingester = DataIngester(redis_client, STREAM_NAME, POSTS_PER_MINUTE)
+        await ingester.start()
+
+    asyncio.run(main())

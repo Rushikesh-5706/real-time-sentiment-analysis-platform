@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import os
 import json
+import asyncio
 import redis.asyncio as redis
 
 from app.api.routes import router as api_router
@@ -29,44 +30,25 @@ app.include_router(aggregate_router)
 REDIS_HOST = os.getenv("REDIS_HOST", "redis")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 
+
+# ---------------- WEBSOCKET ----------------
+from app.api.websocket import websocket_endpoint
+
+app.add_api_websocket_route("/ws/sentiment", websocket_endpoint)
+
 # ---------------- STARTUP ----------------
 @app.on_event("startup")
 async def startup():
     await init_db()          # create tables
-    await seed_demo_data()   # ✅ seed demo rows IF tables empty
+    await seed_demo_data()   # seed demo rows IF tables empty
+    
+    # Start Alert Service
+    from app.services.alerting import AlertService
+    from app.core.database import AsyncSessionLocal
+    
+    alert_service = AlertService(AsyncSessionLocal)
+    asyncio.create_task(alert_service.run_monitoring_loop())
 
-# ---------------- WEBSOCKET ----------------
-@app.websocket("/ws/sentiment")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-
-    client = redis.Redis(
-        host=REDIS_HOST,
-        port=REDIS_PORT,
-        decode_responses=True
-    )
-    pubsub = client.pubsub()
-
-    try:
-        await pubsub.subscribe("sentiment_updates")
-
-        async for message in pubsub.listen():
-            if message["type"] == "subscribe":
-                await websocket.send_json({
-                    "type": "connected",
-                    "message": "Connected to sentiment stream"
-                })
-
-            elif message["type"] == "message":
-                await websocket.send_text(message["data"])
-
-    except WebSocketDisconnect:
-        pass
-    except Exception as e:
-        print(f"WS Error: {e}")
-    finally:
-        await pubsub.unsubscribe("sentiment_updates")
-        await client.close()
 
 # ---------------- ROOT ----------------
 @app.get("/")

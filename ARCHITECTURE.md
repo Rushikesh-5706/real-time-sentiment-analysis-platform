@@ -5,6 +5,85 @@ This platform follows a microservices-based architecture designed to simulate re
 
 ---
 
+---
+
+## System Diagram
+
+```mermaid
+graph TB
+    subgraph "User Interface"
+        FE[Frontend Dashboard<br/>React + Vite<br/>Port 3000]
+    end
+    
+    subgraph "API Layer"
+        API[Backend API<br/>FastAPI<br/>Port 8000]
+    end
+    
+    subgraph "Processing Layer"
+        ING[Ingester Service<br/>Python]
+        WORK[Worker Service<br/>Python + AI Models]
+    end
+    
+    subgraph "Data Layer"
+        REDIS[(Redis Streams<br/>Message Queue)]
+        PG[(PostgreSQL 15<br/>Database)]
+    end
+    
+    subgraph "AI Models"
+        LOCAL[HuggingFace<br/>Local Models]
+        EXT[External LLM<br/>Groq/OpenAI]
+    end
+    
+    FE -->|REST API| API
+    FE -->|WebSocket| API
+    API -->|Read| PG
+    API -->|Cache| REDIS
+    
+    ING -->|Publish Posts| REDIS
+    REDIS -->|Consume Stream| WORK
+    WORK -->|Analyze| LOCAL
+    WORK -->|Analyze| EXT
+    WORK -->|Store Results| PG
+    WORK -->|Broadcast| API
+    
+    style FE fill:#61dafb
+    style API fill:#009688
+    style REDIS fill:#dc382d
+    style PG fill:#336791
+    style WORK fill:#ffd700
+    style ING fill:#ff9800
+```
+
+## Data Flow Sequence
+
+```mermaid
+sequenceDiagram
+    participant ING as Ingester
+    participant R as Redis Stream
+    participant W as Worker
+    participant AI as AI Models
+    participant DB as PostgreSQL
+    participant API as Backend API
+    participant WS as WebSocket
+    participant FE as Frontend
+    
+    ING->>R: 1. Publish post (XADD)
+    R->>W: 2. Consume (XREADGROUP)
+    W->>AI: 3. Analyze sentiment & emotion
+    AI-->>W: 4. Return results
+    W->>DB: 5. Store post + analysis
+    W->>API: 6. Broadcast new post
+    API->>WS: 7. Push to connected clients
+    WS->>FE: 8. Update dashboard
+    W->>R: 9. Acknowledge (XACK)
+    FE->>API: 10. Fetch aggregated data
+    API->>DB: 11. Query analytics
+    DB-->>API: 12. Return data
+    API-->>FE: 13. Display charts
+```
+
+---
+
 ## Services and Responsibilities
 
 ### 1. PostgreSQL (Database)

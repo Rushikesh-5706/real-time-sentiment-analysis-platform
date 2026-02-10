@@ -399,6 +399,75 @@ Based on testing with Docker Desktop (4 CPU cores, 8GB RAM):
 | **Database Capacity** | 10,000+ posts tested |
 | **Memory Usage** | Backend: 180MB, Worker: 850MB |
 
+---
+
+## 📸 Execution Proof & Screenshots
+
+Visual validation of the platform running successfully with all components operational:
+
+### 1. Docker Services Running
+**All 6 microservices healthy and operational:**
+
+This screenshot shows `docker-compose ps` output confirming all services are up and running with healthy status. You can see the backend, frontend, worker, ingester, PostgreSQL, and Redis containers all active.
+
+![Docker Services](screenshots/01-docker-compose-ps.png)
+
+---
+
+### 2. Backend Health Check
+**System health endpoint showing connected services and real-time statistics:**
+
+The `/api/health` endpoint response demonstrates that both database and Redis connections are active, with live statistics showing the number of posts processed and analyzed.
+
+![Health Check API](screenshots/02-api-health.png)
+
+---
+
+### 3. Posts API Response
+**Analyzed social media posts with sentiment scores and emotions:**
+
+This shows the `/api/posts` endpoint returning real posts with complete sentiment analysis including labels (positive/negative/neutral), confidence scores, and detected emotions (joy, anger, etc.).
+
+![Posts API](screenshots/03-api-posts.png)
+
+---
+
+### 4. Sentiment Aggregation
+**Time-series sentiment data for analytics and trending:**
+
+The `/api/sentiment/aggregate` endpoint provides hourly sentiment breakdowns, enabling trend analysis over time periods. This is crucial for understanding sentiment shifts.
+
+![Sentiment Aggregation](screenshots/04-sentiment-aggregate.png)
+
+---
+
+### 5. Sentiment Distribution
+**Overall sentiment breakdown across all analyzed posts:**
+
+The `/api/sentiment/distribution` endpoint shows the percentage distribution of positive, negative, and neutral sentiments across the entire dataset, providing a high-level overview.
+
+![Sentiment Distribution](screenshots/05-sentiment-distribution.png)
+
+---
+
+### 6. Frontend Dashboard
+**Live React dashboard with real-time updates and visualizations:**
+
+The web dashboard at `localhost:3000` displays sentiment trends, recent posts, and live statistics. The UI updates in real-time as new posts are analyzed via WebSocket connections.
+
+![Dashboard](screenshots/06-dashboard.png)
+
+---
+
+### 7. WebSocket Connection
+**Real-time WebSocket streaming sentiment updates:**
+
+This demonstrates the WebSocket connection at `/ws/sentiment` successfully streaming live sentiment analysis results to connected clients as posts are processed in real-time.
+
+![WebSocket](screenshots/07-websocket-connected.png)
+
+---
+
 ## Additional Documentation
 
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Detailed system design, data flow, and component interactions

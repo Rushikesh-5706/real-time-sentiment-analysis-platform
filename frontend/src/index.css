@@ -1,0 +1,44 @@
+body {
+  margin: 0;
+  background: #0f172a;
+  color: #f8fafc;
+  font-family: Inter, Arial, sans-serif;
+}
+
+.dashboard {
+  padding: 24px;
+  max-width: 1200px;
+  margin: auto;
+}
+
+.header {
+  margin-bottom: 24px;
+}
+
+.status span.connected { color: #10b981; }
+.status span.disconnected { color: #ef4444; }
+.status span.connecting { color: #f59e0b; }
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.card {
+  background: #1e293b;
+  padding: 16px;
+  border-radius: 10px;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.metrics .card {
+  text-align: center;
+}

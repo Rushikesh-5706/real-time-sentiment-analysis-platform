@@ -2,7 +2,7 @@
 
 A production-grade, microservices-based platform for analyzing sentiment and emotions in real-time social media streams. Built with modern technologies including FastAPI, Redis Streams, PostgreSQL, and React, this system processes thousands of posts per minute with AI-powered sentiment analysis.
 
-## 🌟 What This Platform Does
+## What This Platform Does
 
 Imagine a system that continuously monitors social media conversations, instantly understanding whether people are happy, angry, or neutral about products and brands. That's exactly what this platform delivers:
 
@@ -12,16 +12,16 @@ Imagine a system that continuously monitors social media conversations, instantl
 - **Stores** everything in a robust PostgreSQL database
 - **Visualizes** insights through a beautiful, live-updating dashboard
 
-## ✨ Key Features
+## Key Features
 
-- 🚀 **Real-Time Processing** - Redis Streams ensure reliable, at-least-once message delivery
-- 🤖 **AI-Powered Analysis** - Local HuggingFace Transformers models (no API costs!)
-- 📊 **Live Dashboard** - React-based UI with WebSocket updates
-- 🔌 **RESTful API** - Complete API for data access and aggregation
-- 🐳 **Fully Dockerized** - One command to start everything
-- ✅ **Production Ready** - Comprehensive test suite with 45+ tests
+- **Real-Time Processing** - Redis Streams ensure reliable, at-least-once message delivery
+- **AI-Powered Analysis** - Local HuggingFace Transformers models (no API costs!)
+- **Live Dashboard** - React-based UI with WebSocket updates
+- **RESTful API** - Complete API for data access and aggregation
+- **Fully Dockerized** - One command to start everything
+- **Production Ready** - Comprehensive test suite with 45+ tests
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 The platform consists of **6 microservices** working together:
 
@@ -48,7 +48,7 @@ The platform consists of **6 microservices** working together:
 3. **Backend API** serves data via REST and WebSocket
 4. **Frontend** displays live sentiment trends and analytics
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Component | Technology | Purpose |
 |-----------|-----------|---------|
@@ -60,7 +60,7 @@ The platform consists of **6 microservices** working together:
 | **AI Models** | HuggingFace Transformers | Sentiment + Emotion analysis |
 | **Deployment** | Docker + Docker Compose | Containerized services |
 
-## 📋 Prerequisites
+## Prerequisites
 
 Before you begin, ensure you have:
 
@@ -75,7 +75,7 @@ docker --version          # Should show 20.10+
 docker-compose --version  # Should show v2+
 ```
 
-## 🚀 Quick Start Guide
+## Quick Start Guide
 
 ### Step 1: Clone the Repository
 
@@ -135,12 +135,12 @@ docker-compose ps
 
 Once all services are running:
 
-- **🌐 Frontend Dashboard**: http://localhost:3000
+- **Frontend Dashboard**: http://localhost:3000
   - View live sentiment trends
   - See real-time post analysis
   - Monitor system statistics
 
-- **🔌 Backend API**: http://localhost:8000
+- **Backend API**: http://localhost:8000
   - API Documentation: http://localhost:8000/docs
   - Health Check: http://localhost:8000/api/health
 
@@ -174,7 +174,7 @@ curl "http://localhost:8000/api/posts?limit=5" | python3 -m json.tool
 # "Terrible experience with Amazon Prime" → negative (98.45%), anger
 ```
 
-## 📊 API Reference
+## API Reference
 
 ### Health Check
 ```bash
@@ -208,7 +208,7 @@ Connect to receive live sentiment updates as posts are analyzed.
 
 **Full API documentation**: http://localhost:8000/docs (Swagger UI)
 
-## 🧪 Running Tests
+## Running Tests
 
 The platform includes a comprehensive test suite with 45+ tests covering unit, integration, and performance scenarios.
 
@@ -231,7 +231,7 @@ docker-compose exec backend pytest tests/test_integration.py -v
 ===================== 45 passed in 12.34s =====================
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 real-time-sentiment-analysis-platform-main/
@@ -272,7 +272,7 @@ real-time-sentiment-analysis-platform-main/
     └── vite.config.js
 ```
 
-## 🔧 Useful Commands
+## Useful Commands
 
 ### Managing Services
 
@@ -319,7 +319,7 @@ docker-compose exec redis redis-cli XINFO GROUPS social_posts_stream
 docker-compose exec redis redis-cli MONITOR
 ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Services Won't Start
 
@@ -386,7 +386,7 @@ docker-compose logs worker | grep "Loading local"
 docker-compose restart worker
 ```
 
-## 📈 Performance Metrics
+## Performance Metrics
 
 Based on testing with Docker Desktop (4 CPU cores, 8GB RAM):
 
@@ -399,13 +399,13 @@ Based on testing with Docker Desktop (4 CPU cores, 8GB RAM):
 | **Database Capacity** | 10,000+ posts tested |
 | **Memory Usage** | Backend: 180MB, Worker: 850MB |
 
-## 📚 Additional Documentation
+## Additional Documentation
 
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Detailed system design, data flow, and component interactions
 - **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** - Complete API reference with examples
 - **[DEPLOYMENT.md](DEPLOYMENT.md)** - Production deployment guide
 
-## 🤝 Contributing
+## Contributing
 
 This project was built for educational purposes. If you'd like to extend it:
 
@@ -419,7 +419,7 @@ This project was built for educational purposes. If you'd like to extend it:
 
 This project is intended for educational and evaluation purposes.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **HuggingFace** for providing excellent pre-trained models
 - **FastAPI** for the amazing Python web framework
@@ -428,6 +428,3 @@ This project is intended for educational and evaluation purposes.
 
 ---
 
-**Built with ❤️ for real-time sentiment analysis**
-
-Questions? Issues? Open an issue on GitHub!
